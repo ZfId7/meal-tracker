@@ -1,0 +1,158 @@
+<!-- File path: /app/templates/dashboard.html -->
+
+{% extends "base.html" %}
+
+{% block title %}Dashboard | Meal Tracker{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h2>Dashboard</h2>
+        <p class="page-subtitle">Today’s intake overview for {{ today.isoformat() }}.</p>
+    </div>
+</div>
+
+<div class="dashboard-grid">
+    <div class="card dashboard-card">
+        <h3>Calories</h3>
+        <div class="metric-row">
+            <div>
+                <div class="metric-label">Consumed</div>
+                <div class="metric-value">{{ totals.calories }}</div>
+            </div>
+            <div>
+                <div class="metric-label">Target</div>
+                <div class="metric-value">{{ targets.calories if targets.calories is not none else "-" }}</div>
+            </div>
+            <div>
+                <div class="metric-label">Remaining</div>
+                <div class="metric-value">{{ remaining.calories if remaining.calories is not none else "-" }}</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card dashboard-card">
+        <h3>Protein</h3>
+        <div class="metric-row">
+            <div>
+                <div class="metric-label">Consumed</div>
+                <div class="metric-value">{{ totals.protein_g }} g</div>
+            </div>
+            <div>
+                <div class="metric-label">Target</div>
+                <div class="metric-value">
+                    {{ targets.protein_g if targets.protein_g is not none else "-" }}{% if targets.protein_g is not none %} g{% endif %}
+                </div>
+            </div>
+            <div>
+                <div class="metric-label">Remaining</div>
+                <div class="metric-value">
+                    {{ remaining.protein_g if remaining.protein_g is not none else "-" }}{% if remaining.protein_g is not none %} g{% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card dashboard-card">
+        <h3>Carbs</h3>
+        <div class="metric-row">
+            <div>
+                <div class="metric-label">Consumed</div>
+                <div class="metric-value">{{ totals.carbs_g }} g</div>
+            </div>
+            <div>
+                <div class="metric-label">Target</div>
+                <div class="metric-value">
+                    {{ targets.carbs_g if targets.carbs_g is not none else "-" }}{% if targets.carbs_g is not none %} g{% endif %}
+                </div>
+            </div>
+            <div>
+                <div class="metric-label">Remaining</div>
+                <div class="metric-value">
+                    {{ remaining.carbs_g if remaining.carbs_g is not none else "-" }}{% if remaining.carbs_g is not none %} g{% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card dashboard-card">
+        <h3>Fat</h3>
+        <div class="metric-row">
+            <div>
+                <div class="metric-label">Consumed</div>
+                <div class="metric-value">{{ totals.fat_g }} g</div>
+            </div>
+            <div>
+                <div class="metric-label">Target</div>
+                <div class="metric-value">
+                    {{ targets.fat_g if targets.fat_g is not none else "-" }}{% if targets.fat_g is not none %} g{% endif %}
+                </div>
+            </div>
+            <div>
+                <div class="metric-label">Remaining</div>
+                <div class="metric-value">
+                    {{ remaining.fat_g if remaining.fat_g is not none else "-" }}{% if remaining.fat_g is not none %} g{% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card" style="margin-top: 24px;">
+    <div class="page-header" style="margin-bottom: 16px;">
+        <div>
+            <h3 style="margin: 0;">Meal Summary</h3>
+            <p class="page-subtitle">Today’s intake grouped by meal type.</p>
+        </div>
+    </div>
+
+    <div class="table-wrap">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Meal</th>
+                    <th>Entries</th>
+                    <th>Calories</th>
+                    <th>Protein</th>
+                    <th>Carbs</th>
+                    <th>Fat</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>Breakfast</td>
+                    <td>{{ meal_summary.breakfast.count }}</td>
+                    <td>{{ meal_summary.breakfast.calories }}</td>
+                    <td>{{ meal_summary.breakfast.protein_g }} g</td>
+                    <td>{{ meal_summary.breakfast.carbs_g }} g</td>
+                    <td>{{ meal_summary.breakfast.fat_g }} g</td>
+                </tr>
+                <tr>
+                    <td>Lunch</td>
+                    <td>{{ meal_summary.lunch.count }}</td>
+                    <td>{{ meal_summary.lunch.calories }}</td>
+                    <td>{{ meal_summary.lunch.protein_g }} g</td>
+                    <td>{{ meal_summary.lunch.carbs_g }} g</td>
+                    <td>{{ meal_summary.lunch.fat_g }} g</td>
+                </tr>
+                <tr>
+                    <td>Dinner</td>
+                    <td>{{ meal_summary.dinner.count }}</td>
+                    <td>{{ meal_summary.dinner.calories }}</td>
+                    <td>{{ meal_summary.dinner.protein_g }} g</td>
+                    <td>{{ meal_summary.dinner.carbs_g }} g</td>
+                    <td>{{ meal_summary.dinner.fat_g }} g</td>
+                </tr>
+                <tr>
+                    <td>Snack</td>
+                    <td>{{ meal_summary.snack.count }}</td>
+                    <td>{{ meal_summary.snack.calories }}</td>
+                    <td>{{ meal_summary.snack.protein_g }} g</td>
+                    <td>{{ meal_summary.snack.carbs_g }} g</td>
+                    <td>{{ meal_summary.snack.fat_g }} g</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,129 @@
+<!--File path: /app/templates/saved_meals/create.html-->
+
+{% extends "base.html" %}
+
+{% block title %}Add Saved Meal | Meal Tracker{% endblock %}
+
+{% block content %}
+{% set selected_food_ids = selected_food_ids if selected_food_ids is defined else ["", "", ""] %}
+{% set selected_amounts = selected_amounts if selected_amounts is defined else ["", "", ""] %}
+{% set selected_units = selected_units if selected_units is defined else ["", "", ""] %}
+<div class="page-header">
+    <div>
+        <h2>Add Saved Meal</h2>
+        <p class="page-subtitle">Build a reusable meal from foods in your library.</p>
+    </div>
+
+    <div>
+        <a class="btn btn-secondary" href="{{ url_for('saved_meals_bp.index') }}">Back to Saved Meals</a>
+    </div>
+</div>
+
+<form method="POST" class="card form-card">
+    <div class="form-grid">
+        <div class="form-group">
+            <label for="name">Saved Meal Name *</label>
+            <input
+                type="text"
+                id="name"
+                name="name"
+                value="{{ form_data.get('name', '') }}"
+                required
+            >
+        </div>
+    </div>
+
+    <div class="form-group form-group-full">
+        <label for="notes">Notes</label>
+        <textarea id="notes" name="notes" rows="3">{{ form_data.get('notes', '') }}</textarea>
+    </div>
+
+    <h3 style="margin-top: 8px;">Meal Items</h3>
+
+    <div class="table-wrap">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Food</th>
+                    <th>Amount</th>
+                    <th>Unit</th>
+                </tr>
+            </thead>
+            <tbody id="saved-meal-items-body">
+                {% for i in range(row_count) %}
+                    <tr class="saved-meal-item-row">
+                        <td>
+                            <select name="food_id">
+                                <option value="">-- Select Food --</option>
+                                {% for food in foods %}
+                                    <option
+                                        value="{{ food.id }}"
+                                        {% if selected_food_ids[i] == (food.id|string) %}selected{% endif %}
+                                    >
+                                        {{ food.name }}{% if food.brand %} ({{ food.brand }}){% endif %}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </td>
+                        <td>
+                            <input
+                                type="number"
+                                step="any"
+                                name="amount"
+                                value="{{ selected_amounts[i] }}"
+                            >
+                        </td>
+                        <td>
+                            <select name="unit">
+                                <option value="">-- Select Unit --</option>
+                                {% for value, label in food_units %}
+                                    <option
+                                        value="{{ value }}"
+                                        {% if selected_units[i] == value %}selected{% endif %}
+                                    >    
+                                        {{ label }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <div style="display: flex; gap: 8px; margin-top: 12px;">
+        <button type="button" class="btn btn-secondary btn-sm" id="add-saved-meal-row-btn">
+            + Add Row
+        </button>
+        <button type="button" class="btn btn-secondary btn-sm" id="remove-saved-meal-row-btn">
+            Remove Last Row
+        </button>
+    </div>
+
+    <div class="form-actions">
+        <a class="btn btn-secondary" href="{{ url_for('saved_meals_bp.index') }}">Cancel</a>
+        <button type="submit" class="btn btn-primary">Save Saved Meal</button>
+    </div>
+
+    <script>
+        window.savedMealFoods = [
+            {% for food in foods %}
+            {
+                id: "{{ food.id }}",
+                label: "{{ (food.name ~ ((' (' ~ food.brand ~ ')') if food.brand else '')) | replace('"', '\\"') }}"
+            }{% if not loop.last %},{% endif %}
+            {% endfor %}
+        ];
+
+        window.savedMealUnits = [
+            {% for value, label in food_units %}
+            {
+                value: "{{ value }}",
+                label: "{{ label }}"
+            }{% if not loop.last %},{% endif %}
+            {% endfor %}
+        ];
+    </script>
+</form>
+{% endblock %}

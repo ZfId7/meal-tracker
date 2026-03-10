@@ -1,0 +1,169 @@
+<!-- File path: /app/templates/history/index.html -->
+
+{% extends "base.html" %}
+
+{% block title %}History | Meal Tracker{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h2>History</h2>
+        <p class="page-subtitle">Monthly calendar view of logged intake.</p>
+    </div>
+</div>
+
+<div class="card" style="margin-bottom: 24px;">
+    <div class="calendar-toolbar">
+        <a
+            class="btn btn-secondary"
+            href="{{ url_for('history_bp.index', year=prev_year, month=prev_month, selected_date=selected_date.isoformat()) }}"
+        >
+            ← Previous
+        </a>
+
+        <div class="calendar-month-label">{{ month_label }}</div>
+
+        <a
+            class="btn btn-secondary"
+            href="{{ url_for('history_bp.index', year=next_year, month=next_month, selected_date=selected_date.isoformat()) }}"
+        >
+            Next →
+        </a>
+    </div>
+
+    <div class="calendar-grid calendar-grid-header">
+        <div>Sun</div>
+        <div>Mon</div>
+        <div>Tue</div>
+        <div>Wed</div>
+        <div>Thu</div>
+        <div>Fri</div>
+        <div>Sat</div>
+    </div>
+
+    <div class="calendar-body">
+        {% for week in weeks %}
+            <div class="calendar-grid calendar-week">
+                {% for cell in week %}
+                    <a
+                        class="calendar-tile
+                            {% if not cell.is_current_month %} calendar-tile-muted{% endif %}
+                            {% if cell.is_today %} calendar-tile-today{% endif %}
+                            {% if cell.date == selected_date %} calendar-tile-selected{% endif %}"
+                        href="{{ url_for('history_bp.index', year=selected_year, month=selected_month, selected_date=cell.date.isoformat()) }}#selected-day-detail"
+                    >
+                        <div class="calendar-tile-date">{{ cell.day_number }}</div>
+
+                        <div class="calendar-macro-grid">
+                            <div class="calendar-macro-box">
+                                <div class="calendar-macro-label">Cal</div>
+                                <div class="calendar-macro-value">
+                                    {{ cell.totals.calories if cell.totals else "-" }}
+                                </div>
+                            </div>
+
+                            <div class="calendar-macro-box">
+                                <div class="calendar-macro-label">P</div>
+                                <div class="calendar-macro-value">
+                                    {{ cell.totals.protein_g if cell.totals else "-" }}
+                                </div>
+                            </div>
+
+                            <div class="calendar-macro-box">
+                                <div class="calendar-macro-label">C</div>
+                                <div class="calendar-macro-value">
+                                    {{ cell.totals.carbs_g if cell.totals else "-" }}
+                                </div>
+                            </div>
+
+                            <div class="calendar-macro-box">
+                                <div class="calendar-macro-label">F</div>
+                                <div class="calendar-macro-value">
+                                    {{ cell.totals.fat_g if cell.totals else "-" }}
+                                </div>
+                            </div>
+                        </div>
+                    </a>
+                {% endfor %}
+            </div>
+        {% endfor %}
+    </div>
+</div>
+
+<div id= "selected-day-detail" class="card" style="margin-bottom: 24px;">
+    <div class="page-header" style="margin-bottom: 12px;">
+        <div>
+            <h3 style="margin: 0;">Selected Day</h3>
+            <p class="page-subtitle">Viewing details for {{ selected_date.strftime("%A, %B %d, %Y") }}</p>
+        </div>
+    </div>
+
+    <div class="form-grid">
+        <div><strong>Calories:</strong> {{ selected_totals.calories }}</div>
+        <div><strong>Protein:</strong> {{ selected_totals.protein_g }} g</div>
+        <div><strong>Carbs:</strong> {{ selected_totals.carbs_g }} g</div>
+        <div><strong>Fat:</strong> {{ selected_totals.fat_g }} g</div>
+    </div>
+</div>
+
+{% for meal_key, meal_label in meal_types %}
+    <div class="card" style="margin-bottom: 20px;">
+        <h3 style="margin-top: 0;">{{ meal_label }}</h3>
+
+        {% set meal_entries = grouped_entries.get(meal_key, []) %}
+
+        {% if meal_entries %}
+            <div class="table-wrap">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Food</th>
+                            <th>Amount</th>
+                            <th>Calories</th>
+                            <th>Protein</th>
+                            <th>Carbs</th>
+                            <th>Fat</th>
+                            <th>Notes</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for entry in meal_entries %}
+                            <tr>
+                                <td>{{ entry.display_name }}</td>
+                                <td>{{ entry.amount }} {{ entry.unit }}</td>
+                                <td>{{ entry.calories }}</td>
+                                <td>{{ entry.protein_g }} g</td>
+                                <td>{{ entry.carbs_g }} g</td>
+                                <td>{{ entry.fat_g }} g</td>
+                                <td>{{ entry.notes or "-" }}</td>
+                                <td>
+                                    <div style="display: flex; gap: 8px; align-items: center;">
+                                        <a
+                                            class="btn btn-secondary btn-sm"
+                                            href="{{ url_for('daily_log_bp.edit_entry', entry_id=entry.id) }}"
+                                        >
+                                            Edit
+                                        </a>
+
+                                        <form
+                                            method="POST"
+                                            action="{{ url_for('daily_log_bp.delete_entry', entry_id=entry.id) }}"
+                                            onsubmit="return confirm('Delete this log entry?');"
+                                            style="margin: 0;"
+                                        >
+                                            <button type="submit" class="btn btn-secondary btn-sm">Delete</button>
+                                        </form>
+                                    </div>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <p>No entries for {{ meal_label.lower() }}.</p>
+        {% endif %}
+    </div>
+{% endfor %}
+{% endblock %}

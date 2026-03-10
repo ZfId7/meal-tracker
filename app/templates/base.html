@@ -1,0 +1,45 @@
+<!-- File path: /app/templates/base.html  -->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Meal Tracker{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+</head>
+<body>
+    <div class="app-shell">
+        <aside class="sidebar">
+            <h1 class="logo">Meal Tracker</h1>
+
+            <nav class="nav">
+                <a href="{{ url_for('main_bp.dashboard') }}">Dashboard</a>
+                <a href="{{ url_for('food_library_bp.index') }}">Food Library</a>
+                <a href="{{ url_for('saved_meals_bp.index') }}">Saved Meals</a>
+                <a href="{{ url_for('daily_log_bp.index') }}">Daily Log</a>
+                <a href="{{ url_for('history_bp.index') }}">History</a>
+                <a href="{{ url_for('settings_bp.index') }}">Settings</a>
+            </nav>
+        </aside>
+
+        <main class="content">
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    <div class="flash-stack">
+                        {% for category, message in messages %}
+                            <div class="flash flash-{{ category }}">
+                                {{ message }}
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            {% endwith %}
+
+            {% block content %}{% endblock %}
+        </main>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+</html>

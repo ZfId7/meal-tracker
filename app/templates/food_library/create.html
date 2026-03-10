@@ -1,0 +1,224 @@
+<!-- File path: /app/templates/food_library/create.html -->
+
+{% extends "base.html" %}
+
+{% block title %}Add Food | Meal Tracker{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h2>Add Food</h2>
+        <p class="page-subtitle">Create a reusable food entry from nutrition label data.</p>
+    </div>
+
+    <div>
+        <a class="btn btn-secondary" href="{{ url_for('food_library_bp.index') }}">Back to Food Library</a>
+    </div>
+</div>
+
+<form method="POST" class="card form-card">
+    <div class="form-grid">
+        <div class="form-group">
+            <label for="name">Food Name *</label>
+            <input
+                type="text"
+                id="name"
+                name="name"
+                value="{{ form_data.get('name', '') }}"
+                required
+            >
+        </div>
+
+        <div class="form-group">
+            <label for="brand">Brand</label>
+            <input
+                type="text"
+                id="brand"
+                name="brand"
+                value="{{ form_data.get('brand', '') }}"
+            >
+        </div>
+
+        <div class="form-group">
+            <label for="category">Category</label>
+            <select id="category" name="category">
+                <option value="">-- Select Category --</option>
+                {% for value, label in food_categories %}
+                    <option
+                        value="{{ value }}"
+                        {% if form_data.get('category', '') == value %}selected{% endif %}
+                    >
+                        {{ label }}
+                    </option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label for="reference_amount">Reference Amount *</label>
+            <input
+                type="number"
+                step="any"
+                id="reference_amount"
+                name="reference_amount"
+                value="{{ form_data.get('reference_amount', '') }}"
+                required
+            >
+        </div>
+
+        <div class="form-group">
+            <label for="reference_unit">Reference Unit *</label>
+            <select id="reference_unit" name="reference_unit" required>
+                <option value="">-- Select Unit --</option>
+                {% for value, label in food_units %}
+                    <option
+                        value="{{ value }}"
+                        {% if form_data.get('reference_unit', '') == value %}selected{% endif %}
+                    >
+                        {{ label }}
+                    </option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label for="equivalent_grams">Equivalent Grams</label>
+            <input
+                type="number"
+                step="any"
+                id="equivalent_grams"
+                name="equivalent_grams"
+                value="{{ form_data.get('equivalent_grams', '') }}"
+            >
+        </div>
+
+        <div class="form-group">
+            <label for="equivalent_ml">Equivalent mL</label>
+            <input
+                type="number"
+                step="any"
+                id="equivalent_ml"
+                name="equivalent_ml"
+                value="{{ form_data.get('equivalent_ml', '') }}"
+            >
+        </div>
+
+        <div class="form-group">
+            <label for="calories">Calories *</label>
+            <input
+                type="number"
+                step="any"
+                id="calories"
+                name="calories"
+                value="{{ form_data.get('calories', '') }}"
+                required
+            >
+        </div>
+
+        <div class="form-group">
+            <label for="protein_g">Protein (g) *</label>
+            <input
+                type="number"
+                step="any"
+                id="protein_g"
+                name="protein_g"
+                value="{{ form_data.get('protein_g', '') }}"
+                required
+            >
+        </div>
+
+        <div class="form-group">
+            <label for="carbs_g">Carbs (g) *</label>
+            <input
+                type="number"
+                step="any"
+                id="carbs_g"
+                name="carbs_g"
+                value="{{ form_data.get('carbs_g', '') }}"
+                required
+            >
+        </div>
+
+        <div class="form-group">
+            <label for="fat_g">Fat (g) *</label>
+            <input
+                type="number"
+                step="any"
+                id="fat_g"
+                name="fat_g"
+                value="{{ form_data.get('fat_g', '') }}"
+                required
+            >
+        </div>
+
+        <div class="form-group">
+            <label for="fiber_g">Fiber (g)</label>
+            <input
+                type="number"
+                step="any"
+                id="fiber_g"
+                name="fiber_g"
+                value="{{ form_data.get('fiber_g', '') }}"
+            >
+        </div>
+
+        <div class="form-group">
+            <label for="sugar_g">Sugar (g)</label>
+            <input
+                type="number"
+                step="any"
+                id="sugar_g"
+                name="sugar_g"
+                value="{{ form_data.get('sugar_g', '') }}"
+            >
+        </div>
+
+        <div class="form-group">
+            <label for="sodium_mg">Sodium (mg)</label>
+            <input
+                type="number"
+                step="any"
+                id="sodium_mg"
+                name="sodium_mg"
+                value="{{ form_data.get('sodium_mg', '') }}"
+            >
+        </div>
+
+        <div class="form-group">
+            <label for="saturated_fat_g">Saturated Fat (g)</label>
+            <input
+                type="number"
+                step="any"
+                id="saturated_fat_g"
+                name="saturated_fat_g"
+                value="{{ form_data.get('saturated_fat_g', '') }}"
+            >
+        </div>
+
+        <div class="form-group">
+            <label for="cholesterol_mg">Cholesterol (mg)</label>
+            <input
+                type="number"
+                step="any"
+                id="cholesterol_mg"
+                name="cholesterol_mg"
+                value="{{ form_data.get('cholesterol_mg', '') }}"
+            >
+        </div>
+    </div>
+
+    <div class="form-group form-group-full">
+        <label for="notes">Notes</label>
+        <textarea
+            id="notes"
+            name="notes"
+            rows="4"
+        >{{ form_data.get('notes', '') }}</textarea>
+    </div>
+
+    <div class="form-actions">
+        <a class="btn btn-secondary" href="{{ url_for('food_library_bp.index') }}">Cancel</a>
+        <button type="submit" class="btn btn-primary">Save Food</button>
+    </div>
+</form>
+{% endblock %}

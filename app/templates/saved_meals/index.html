@@ -1,0 +1,70 @@
+<!-- File path: /app/templates/saved_meals/index.html -->
+
+{% extends "base.html" %}
+
+{% block title %}Saved Meals | Meal Tracker{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h2>Saved Meals</h2>
+        <p class="page-subtitle">Reusable meal templates built from foods in your library.</p>
+    </div>
+
+    <div>
+        <a class="btn btn-primary" href="{{ url_for('saved_meals_bp.create') }}">+ Add Saved Meal</a>
+    </div>
+</div>
+
+<div class="card">
+    {% if saved_meals %}
+        <div class="table-wrap">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Items</th>
+                        <th>Calories</th>
+                        <th>Protein</th
+                        <th>Carbs</th>
+                        <th>Fat</th>   
+                        <th>Notes</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for meal in saved_meals %}
+                        <tr>
+                            <td>{{ meal.name }}</td>
+                            <td>{{ meal.items|length }}</td>
+                            <td>{{ meal_totals[meal.id].calories }}</td>
+                            <td>{{ meal_totals[meal.id].protein_g }}</td>
+                            <td>{{ meal_totals[meal.id].carbs_g }}</td>
+                            <td>{{ meal_totals[meal.id].fat_g }}</td>
+                            <td>{{ meal.notes or "-" }}</td>
+                            <td>
+                                <div style="display: flex; gap: 8px; align-items: center;">
+                                    <a class="btn btn-secondary btn-sm" href="{{ url_for('saved_meals_bp.edit', saved_meal_id=meal.id) }}">
+                                        Edit
+                                    </a>
+
+                                    <form
+                                        method="POST"
+                                        action="{{ url_for('saved_meals_bp.delete', saved_meal_id=meal.id) }}"
+                                        onsubmit="return confirm('Delete this saved meal?');"
+                                        style="margin: 0;"
+                                    >
+                                        <button type="submit" class="btn btn-secondary btn-sm">Delete</button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <p>No saved meals yet. Add your first saved meal template.</p>
+    {% endif %}
+</div>
+{% endblock %}

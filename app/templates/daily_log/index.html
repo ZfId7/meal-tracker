@@ -1,0 +1,212 @@
+<!-- File path: /app/templates/daily_log/index.html -->
+
+{% extends "base.html" %}
+
+{% block title %}Daily Log | Meal Tracker{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h2>Daily Log</h2>
+        <p class="page-subtitle">Track foods consumed by date and meal type.</p>
+    </div>
+</div>
+
+<div class="card" style="margin-bottom: 24px;">
+    <form method="GET" class="form-grid" style="align-items: end;">
+        <div class="form-group">
+            <label for="entry_date">Log Date</label>
+            <input
+                type="date"
+                id="entry_date"
+                name="entry_date"
+                value="{{ selected_date.isoformat() }}"
+            >
+        </div>
+
+        <div class="form-actions" style="justify-content: flex-start; margin-top: 0;">
+            <button type="submit" class="btn btn-secondary">Load Date</button>
+        </div>
+    </form>
+</div>
+
+<div class="card form-card" style="margin-bottom: 24px;">
+    <h3 style="margin-top: 0;">Add Food Entry</h3>
+
+    <form method="POST">
+        <input type="hidden" name="entry_date" value="{{ selected_date.isoformat() }}">
+
+        <div class="form-grid">
+            <div class="form-group">
+                <label for="meal_type">Meal Type</label>
+                <select id="meal_type" name="meal_type" required>
+                    <option value="">-- Select Meal Type --</option>
+                    {% for value, label in meal_types %}
+                        <option value="{{ value }}">{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="food_id">Food</label>
+                <select id="food_id" name="food_id" required>
+                    <option value="">-- Select Food --</option>
+                    {% for food in foods %}
+                        <option value="{{ food.id }}">
+                            {{ food.name }}{% if food.brand %} ({{ food.brand }}){% endif %}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="amount">Amount</label>
+                <input
+                    type="number"
+                    step="any"
+                    id="amount"
+                    name="amount"
+                    required
+                >
+            </div>
+
+            <div class="form-group">
+                <label for="unit">Unit</label>
+                <select id="unit" name="unit" required>
+                    <option value="">-- Select Unit --</option>
+                    {% for value, label in food_units %}
+                        <option value="{{ value }}">{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+
+        <div class="form-group form-group-full">
+            <label for="notes">Notes</label>
+            <textarea id="notes" name="notes" rows="3"></textarea>
+        </div>
+
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary">Add Entry</button>
+        </div>
+    </form>
+</div>
+
+<div class="card form-card" style="margin-bottom: 24px;">
+    <h3 style="margin-top: 0;">Add Saved Meal</h3>
+
+    <form method="POST" action="{{ url_for('daily_log_bp.log_saved_meal') }}">
+        <input type="hidden" name="entry_date" value="{{ selected_date.isoformat() }}">
+
+        <div class="form-grid">
+            <div class="form-group">
+                <label for="saved_meal_meal_type">Meal Type</label>
+                <select id="saved_meal_meal_type" name="meal_type" required>
+                    <option value="">-- Select Meal Type --</option>
+                    {% for value, label in meal_types %}
+                        <option value="{{ value }}">{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="saved_meal_id">Saved Meal</label>
+                <select id="saved_meal_id" name="saved_meal_id" required>
+                    <option value="">-- Select Saved Meal --</option>
+                    {% for saved_meal in saved_meals %}
+                        <option value="{{ saved_meal.id }}">
+                            {{ saved_meal.name }} ({{ saved_meal.items|length }} items)
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary">Log Saved Meal</button>
+        </div>
+    </form>
+</div>
+
+<div class="card" style="margin-bottom: 24px;">
+    <h3 style="margin-top: 0;">Daily Totals</h3>
+    <div class="form-grid">
+        <div><strong>Calories:</strong> {{ totals.calories }}</div>
+        <div><strong>Protein:</strong> {{ totals.protein_g }} g</div>
+        <div><strong>Carbs:</strong> {{ totals.carbs_g }} g</div>
+        <div><strong>Fat:</strong> {{ totals.fat_g }} g</div>
+    </div>
+</div>
+
+{% for meal_key, meal_label in meal_types %}
+    <div class="card" style="margin-bottom: 20px;">
+        <h3 style="margin-top: 0;">{{ meal_label }}</h3>
+
+        {% set meal_entries = grouped_entries.get(meal_key, []) %}
+
+        {% if meal_entries %}
+            <div class="table-wrap">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Food</th>
+                            <th>Amount</th>
+                            <th>Calories</th>
+                            <th>Protein</th>
+                            <th>Carbs</th>
+                            <th>Fat</th>
+                            <th>Notes</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for entry in meal_entries %}
+                            <tr>
+                                <td>{{ entry.display_name }}</td>
+                                <td>{{ entry.amount }} {{ entry.unit }}</td>
+                                <td>{{ entry.calories }}</td>
+                                <td>{{ entry.protein_g }} g</td>
+                                <td>{{ entry.carbs_g }} g</td>
+                                <td>{{ entry.fat_g }} g</td>
+                                <td>{{ entry.notes or "-" }}</td>
+                                <td>
+                                    <div style="display: flex; gap: 8px; align-items: center;">
+                                        <a
+                                            class="btn btn-secondary btn-sm"
+                                            href="{{ url_for('daily_log_bp.edit_entry', entry_id=entry.id) }}"
+                                        >
+                                            Edit
+                                        </a>
+
+                                        <form
+                                            method="POST"
+                                            action="{{ url_for('daily_log_bp.delete_entry', entry_id=entry.id) }}"
+                                            onsubmit="return confirm('Delete this log entry?');"
+                                            style="margin: 0;"
+                                        >
+                                            <button type="submit" class="btn btn-secondary btn-sm">Delete</button>
+                                        </form>
+                                    </div>
+                                </td>
+                            </tr>
+                        {% endfor %}
+
+                        <tr>
+                            <td><strong>Total</strong></td>
+                            <td>-</td>
+                            <td><strong>{{ meal_entries | sum(attribute='calories') | round(2) }}</strong></td>
+                            <td><strong>{{ meal_entries | sum(attribute='protein_g') | round(2) }} g</strong></td>
+                            <td><strong>{{ meal_entries | sum(attribute='carbs_g') | round(2) }} g</strong></td>
+                            <td><strong>{{ meal_entries | sum(attribute='fat_g') | round(2) }} g</strong></td>
+                            <td>-</td>
+                            <td>-</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <p>No entries for {{ meal_label.lower() }}.</p>
+        {% endif %}
+    </div>
+{% endfor %}
+{% endblock %}

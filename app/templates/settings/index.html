@@ -1,0 +1,66 @@
+<!-- File path: /app/templates/settings/index.html -->
+
+{% extends "base.html" %}
+
+{% block title %}Settings | Meal Tracker{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h2>Settings</h2>
+        <p class="page-subtitle">Set your daily calorie and macro targets.</p>
+    </div>
+</div>
+
+<form method="POST" class="card form-card" style="max-width: 720px;">
+    <div class="form-grid">
+        <div class="form-group">
+            <label for="calorie_target">Calorie Target</label>
+            <input
+                type="number"
+                step="any"
+                id="calorie_target"
+                name="calorie_target"
+                value="{{ settings_row.calorie_target if settings_row.calorie_target is not none else '' }}"
+            >
+        </div>
+
+        <div class="form-group">
+            <label for="protein_target_g">Protein Target (g)</label>
+            <input
+                type="number"
+                step="any"
+                id="protein_target_g"
+                name="protein_target_g"
+                value="{{ settings_row.protein_target_g if settings_row.protein_target_g is not none else '' }}"
+            >
+        </div>
+
+        <div class="form-group">
+            <label for="carb_target_g">Carb Target (g)</label>
+            <input
+                type="number"
+                step="any"
+                id="carb_target_g"
+                name="carb_target_g"
+                value="{{ settings_row.carb_target_g if settings_row.carb_target_g is not none else '' }}"
+            >
+        </div>
+
+        <div class="form-group">
+            <label for="fat_target_g">Fat Target (g)</label>
+            <input
+                type="number"
+                step="any"
+                id="fat_target_g"
+                name="fat_target_g"
+                value="{{ settings_row.fat_target_g if settings_row.fat_target_g is not none else '' }}"
+            >
+        </div>
+    </div>
+
+    <div class="form-actions">
+        <button type="submit" class="btn btn-primary">Save Settings</button>
+    </div>
+</form>
+{% endblock %}
