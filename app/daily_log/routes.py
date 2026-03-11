@@ -143,6 +143,11 @@ def log_saved_meal():
     if not saved_meal_id_raw:
         errors.append("Saved meal is required.")
 
+    quantity = _safe_float(request.form.get("quantity"), "Quantity", errors)
+
+    if quantity is not None and quantity <= 0:
+        errors.append("Quantity must be greater than zero.")
+
     saved_meal = None
     if saved_meal_id_raw:
         try:
@@ -167,7 +172,9 @@ def log_saved_meal():
         food = item.food
 
         try:
-            nutrition = calculate_entry_from_food(food, item.amount, item.unit)
+            effective_amount = item.amount * quantity
+            nutrition = calculate_entry_from_food(food, effective_amount, item.unit)
+
         except ValueError as exc:
             flash(f"{saved_meal.name}: {exc}", "error")
             return redirect(url_for("daily_log_bp.index", entry_date=selected_date.isoformat()))
@@ -179,7 +186,7 @@ def log_saved_meal():
             source_food_id=food.id,
             source_saved_meal_id=saved_meal.id,
             display_name=food.name,
-            amount=item.amount,
+            amount=effective_amount,
             unit=item.unit,
             calories=nutrition["calories"],
             protein_g=nutrition["protein_g"],
@@ -190,7 +197,7 @@ def log_saved_meal():
             sodium_mg=nutrition["sodium_mg"],
             saturated_fat_g=nutrition["saturated_fat_g"],
             cholesterol_mg=nutrition["cholesterol_mg"],
-            notes=f"From saved meal: {saved_meal.name}",
+            notes=f"From saved meal: {saved_meal.name} x{quantity}",
         )
 
         db.session.add(entry)

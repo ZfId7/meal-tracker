@@ -35,8 +35,48 @@ def _parse_required_float(value, field_label, errors):
 
 @food_library_bp.route("/")
 def index():
-    foods = Food.query.order_by(Food.name.asc()).all()
-    return render_template("food_library/index.html", foods=foods)
+    selected_category = (request.args.get("category") or "").strip()
+
+    query = Food.query
+
+    if selected_category:
+        query = query.filter(Food.category == selected_category)
+
+    foods = query.order_by(Food.category.asc(), Food.name.asc()).all()
+
+    grouped_foods = {}
+    uncategorized_foods = []
+
+    category_label_map = dict(FOOD_CATEGORIES)
+
+    for food in foods:
+        if food.category:
+            category_label = category_label_map.get(food.category, food.category.title())
+            grouped_foods.setdefault(category_label, []).append(food)
+        else:
+            uncategorized_foods.append(food)
+
+    ordered_grouped_foods = []
+    used_labels = set()
+
+    for value, label in FOOD_CATEGORIES:
+        if label in grouped_foods:
+            ordered_grouped_foods.append((label, grouped_foods[label]))
+            used_labels.add(label)
+
+    for category_label, category_foods in grouped_foods.items():
+        if category_label not in used_labels:
+            ordered_grouped_foods.append((category_label, category_foods))
+
+    if uncategorized_foods:
+        ordered_grouped_foods.append(("Uncategorized", uncategorized_foods))
+
+    return render_template(
+        "food_library/index.html",
+        grouped_foods=ordered_grouped_foods,
+        food_categories=FOOD_CATEGORIES,
+        selected_category=selected_category,
+    )
 
 
 @food_library_bp.route("/create", methods=["GET", "POST"])

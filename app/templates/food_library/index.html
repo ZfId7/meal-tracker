@@ -16,46 +16,76 @@
     </div>
 </div>
 
-<div class="card">
-    {% if foods %}
-        <div class="table-wrap">
-            <table class="data-table">
-                <thead>
-                    <tr>
-                        <th>Name</th>
-                        <th>Brand</th>
-                        <th>Category</th>
-                        <th>Reference</th>
-                        <th>Calories</th>
-                        <th>Protein</th>
-                        <th>Carbs</th>
-                        <th>Fat</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for food in foods %}
-                    <tr>
-                        <td>{{ food.name }}</td>
-                        <td>{{ food.brand or "-" }}</td>
-                        <td>{{ food.category or "-" }}</td>
-                        <td>{{ food.reference_amount }} {{ food.reference_unit }}</td>
-                        <td>{{ food.calories }}</td>
-                        <td>{{ food.protein_g }} g</td>
-                        <td>{{ food.carbs_g }} g</td>
-                        <td>{{ food.fat_g }} g</td>
-                        <td>
-                            <a class="btn btn-secondary btn-sm" href="{{ url_for('food_library_bp.edit', food_id=food.id) }}">
-                                Edit
-                            </a>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+<div class="card" style="margin-bottom: 24px;">
+    <form method="GET" class="form-grid" style="align-items: end;">
+        <div class="form-group">
+            <label for="category">Filter by Category</label>
+            <select id="category" name="category">
+                <option value="">-- All Categories --</option>
+                {% for value, label in food_categories %}
+                    <option value="{{ value }}" {% if selected_category == value %}selected{% endif %}>
+                        {{ label }}
+                    </option>
+                {% endfor %}
+            </select>
         </div>
-    {% else %}
-        <p>No foods yet. Add your first food to begin building the library.</p>
-    {% endif %}
+
+        <div class="form-actions" style="justify-content: flex-start; margin-top: 0;">
+            <button type="submit" class="btn btn-secondary">Apply Filter</button>
+            <a class="btn btn-secondary" href="{{ url_for('food_library_bp.index') }}">Clear</a>
+        </div>
+    </form>
 </div>
+
+{% if grouped_foods %}
+    {% for category_label, foods_in_category in grouped_foods %}
+        <div class="card" style="margin-bottom: 24px;">
+            <div class="page-header" style="margin-bottom: 16px;">
+                <div>
+                    <h3 style="margin: 0;">{{ category_label }}</h3>
+                    <p class="page-subtitle">{{ foods_in_category|length }} food(s)</p>
+                </div>
+            </div>
+
+            <div class="table-wrap">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Brand</th>
+                            <th>Reference</th>
+                            <th>Calories</th>
+                            <th>Protein</th>
+                            <th>Carbs</th>
+                            <th>Fat</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for food in foods_in_category %}
+                        <tr>
+                            <td>{{ food.name }}</td>
+                            <td>{{ food.brand or "-" }}</td>
+                            <td>{{ food.reference_amount }} {{ food.reference_unit }}</td>
+                            <td>{{ food.calories }}</td>
+                            <td>{{ food.protein_g }} g</td>
+                            <td>{{ food.carbs_g }} g</td>
+                            <td>{{ food.fat_g }} g</td>
+                            <td>
+                                <a class="btn btn-secondary btn-sm" href="{{ url_for('food_library_bp.edit', food_id=food.id) }}">
+                                    Edit
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    {% endfor %}
+{% else %}
+    <div class="card">
+        <p>No foods yet. Add your first food to begin building the library.</p>
+    </div>
+{% endif %}
 {% endblock %}
