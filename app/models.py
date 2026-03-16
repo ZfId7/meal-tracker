@@ -108,8 +108,10 @@ class SavedMealItem(db.Model):
         nullable=False,
     )
 
-    amount = db.Column(db.Float, nullable=False, default=1.0)
-    unit = db.Column(db.String(20), nullable=False)
+    amount = db.Column(db.Float, nullable=True)
+    unit = db.Column(db.String(20), nullable=True)
+
+    is_optional = db.Column(db.Boolean, nullable=False, default=False)
 
     created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
 

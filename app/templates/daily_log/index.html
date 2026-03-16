@@ -95,7 +95,7 @@
 <div class="card form-card" style="margin-bottom: 24px;">
     <h3 style="margin-top: 0;">Add Saved Meal</h3>
 
-    <form method="POST" action="{{ url_for('daily_log_bp.log_saved_meal') }}">
+    <form method="POST" action="{{ url_for('daily_log_bp.load_saved_meal') }}">
         <input type="hidden" name="entry_date" value="{{ selected_date.isoformat() }}">
 
         <div class="form-grid">
@@ -135,10 +135,98 @@
         </div>
 
         <div class="form-actions">
-            <button type="submit" class="btn btn-primary">Log Saved Meal</button>
+            <button type="submit" class="btn btn-primary">Load Saved Meal</button>
         </div>
     </form>
 </div>
+
+{% if preview_mode %}
+<div class="card form-card" style="margin-bottom: 24px;">
+  <h3>Saved Meal Preview — {{ preview_saved_meal.name }} x{{ preview_quantity }}</h3>
+
+  <form method="POST" action="{{ url_for('daily_log_bp.log_saved_meal') }}">
+    <input type="hidden" name="entry_date" value="{{ selected_date.isoformat() }}">
+    <input type="hidden" name="meal_type" value="{{ preview_meal_type }}">
+    <input type="hidden" name="saved_meal_id" value="{{ preview_saved_meal.id }}">
+    <input type="hidden" name="quantity" value="{{ preview_quantity }}">
+
+    <h4>Required Items</h4>
+
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Food</th>
+          <th>Amount</th>
+        </tr>
+      </thead>
+
+      <tbody>
+        {% for item in required_items %}
+        <tr>
+          <td>{{ item.food.name }}</td>
+          <td>{{ item.amount }} {{ item.unit }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+
+    {% if optional_foods %}
+    <h4 style="margin-top: 16px;">Optional Foods</h4>
+
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Add</th>
+          <th>Food</th>
+          <th>Amount</th>
+          <th>Unit</th>
+        </tr>
+      </thead>
+
+      <tbody>
+        {% for opt in optional_foods %}
+        <tr>
+          <td>
+            <input
+              type="checkbox"
+              name="optional_food_ids"
+              value="{{ opt.food.id }}"
+            >
+          </td>
+
+          <td>{{ opt.food.name }}</td>
+
+          <td>
+            <input
+              type="number"
+              step="any"
+              name="optional_amount_{{ opt.food.id }}"
+            >
+          </td>
+
+          <td>
+            <select name="optional_unit_{{ opt.food.id }}">
+              <option value="">--</option>
+              {% for value, label in food_units %}
+              <option value="{{ value }}">{{ label }}</option>
+              {% endfor %}
+            </select>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% endif %}
+
+    <div class="form-actions">
+      <button type="submit" class="btn btn-primary">
+        Log Saved Meal
+      </button>
+    </div>
+
+  </form>
+</div>
+{% endif %}
 
 <div class="card" style="margin-bottom: 24px;">
     <h3 style="margin-top: 0;">Daily Totals</h3>

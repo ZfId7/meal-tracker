@@ -41,6 +41,9 @@ def index():
         }
 
         for item in meal.items:
+            if item.is_optional:
+                continue
+
             try:
                 nutrition = calculate_entry_from_food(item.food, item.amount, item.unit)
             except ValueError:
@@ -76,6 +79,7 @@ def create():
         food_ids = request.form.getlist("food_id")
         amounts = request.form.getlist("amount")
         units = request.form.getlist("unit")
+        optional_food_ids = request.form.getlist("optional_food_id")
 
         errors = []
 
@@ -121,8 +125,31 @@ def create():
                 "unit": unit_raw,
             })
 
-        if not item_rows:
-            errors.append("Add at least one food item to the saved meal.")
+        optional_item_rows = []
+
+        for index, optional_food_id_raw in enumerate(optional_food_ids):
+            optional_food_id_raw = (optional_food_id_raw or "").strip()
+
+            if not optional_food_id_raw:
+                continue
+
+            try:
+                optional_food_id = int(optional_food_id_raw)
+            except ValueError:
+                errors.append(f"Optional row {index + 1}: Invalid food selection.")
+                continue
+
+            optional_food = Food.query.get(optional_food_id)
+            if optional_food is None:
+                errors.append(f"Optional row {index + 1}: Selected food was not found.")
+                continue
+
+            optional_item_rows.append({
+                "food": optional_food,
+            })
+
+        if not item_rows and not optional_item_rows:
+            errors.append("Add at least one required item or optional food to the saved meal.")
 
         if errors:
             for error in errors:
@@ -138,6 +165,8 @@ def create():
                 selected_food_ids=food_ids + ([""] * (row_count - len(food_ids))),
                 selected_amounts=amounts + ([""] * (row_count - len(amounts))),
                 selected_units=units + ([""] * (row_count - len(units))),
+                optional_row_count=max(len(optional_food_ids), 3),
+                selected_optional_food_ids=optional_food_ids + ([""] * (max(len(optional_food_ids), 3) - len(optional_food_ids))),
             )
 
         saved_meal = SavedMeal(
@@ -157,6 +186,17 @@ def create():
                 )
             )
 
+        for row in optional_item_rows:
+            db.session.add(
+                SavedMealItem(
+                    saved_meal_id=saved_meal.id,
+                    food_id=row["food"].id,
+                    amount=None,
+                    unit=None,
+                    is_optional=True,
+                )
+            )
+
         db.session.commit()
 
         flash("Saved meal created successfully.", "success")
@@ -171,6 +211,8 @@ def create():
         selected_food_ids=["", "", ""],
         selected_amounts=["", "", ""],
         selected_units=["", "", ""],
+        optional_row_count=3,
+        selected_optional_food_ids=["", "", ""],        
     )
 
 @saved_meals_bp.route("/<int:saved_meal_id>/edit", methods=["GET", "POST"])
@@ -185,6 +227,7 @@ def edit(saved_meal_id):
         food_ids = request.form.getlist("food_id")
         amounts = request.form.getlist("amount")
         units = request.form.getlist("unit")
+        optional_food_ids = request.form.getlist("optional_food_id")
 
         errors = []
 
@@ -230,8 +273,31 @@ def edit(saved_meal_id):
                 "unit": unit_raw,
             })
 
-        if not item_rows:
-            errors.append("Add at least one food item to the saved meal.")
+        optional_item_rows = []
+
+        for index, optional_food_id_raw in enumerate(optional_food_ids):
+            optional_food_id_raw = (optional_food_id_raw or "").strip()
+
+            if not optional_food_id_raw:
+                continue
+
+            try:
+                optional_food_id = int(optional_food_id_raw)
+            except ValueError:
+                errors.append(f"Optional row {index + 1}: Invalid food selection.")
+                continue
+
+            optional_food = Food.query.get(optional_food_id)
+            if optional_food is None:
+                errors.append(f"Optional row {index + 1}: Selected food was not found.")
+                continue
+
+            optional_item_rows.append({
+                "food": optional_food,
+            })            
+
+        if not item_rows and not optional_item_rows:
+            errors.append("Add at least one required item or optional food to the saved meal.")
 
         if errors:
             for error in errors:
@@ -249,6 +315,8 @@ def edit(saved_meal_id):
                 selected_food_ids=food_ids + ([""] * (row_count - len(food_ids))),
                 selected_amounts=amounts + ([""] * (row_count - len(amounts))),
                 selected_units=units + ([""] * (row_count - len(units))),
+                optional_row_count=max(len(optional_food_ids), 3),
+                selected_optional_food_ids=optional_food_ids + ([""] * (max(len(optional_food_ids), 3) - len(optional_food_ids))),                
             )
 
         saved_meal.name = name
@@ -266,27 +334,48 @@ def edit(saved_meal_id):
                 )
             )
 
+        for row in optional_item_rows:
+            db.session.add(
+                SavedMealItem(
+                    saved_meal_id=saved_meal.id,
+                    food_id=row["food"].id,
+                    amount=None,
+                    unit=None,
+                    is_optional=True,
+                )
+            )
+
         db.session.commit()
 
         flash("Saved meal updated successfully.", "success")
         return redirect(url_for("saved_meals_bp.index"))
 
-    existing_items = list(saved_meal.items)
-    row_count = max(len(existing_items), 3)
+    existing_required_items = [item for item in saved_meal.items if not item.is_optional]
+    existing_optional_items = [item for item in saved_meal.items if item.is_optional]
+
+    row_count = max(len(existing_required_items), 3)
+    optional_row_count = max(len(existing_optional_items), 3)
 
     selected_food_ids = []
     selected_amounts = []
     selected_units = []
 
-    for item in existing_items:
+    for item in existing_required_items:
         selected_food_ids.append(str(item.food_id))
-        selected_amounts.append(str(item.amount))
+        selected_amounts.append(str(item.amount) if item.amount is not None else "")
         selected_units.append(item.unit or "")
 
     while len(selected_food_ids) < row_count:
         selected_food_ids.append("")
         selected_amounts.append("")
         selected_units.append("")
+
+    selected_optional_food_ids = []
+    for item in existing_optional_items:
+        selected_optional_food_ids.append(str(item.food_id))
+
+    while len(selected_optional_food_ids) < optional_row_count:
+        selected_optional_food_ids.append("")
 
     form_data = {
         "name": saved_meal.name or "",
@@ -303,6 +392,8 @@ def edit(saved_meal_id):
         selected_food_ids=selected_food_ids,
         selected_amounts=selected_amounts,
         selected_units=selected_units,
+        optional_row_count=optional_row_count,
+        selected_optional_food_ids=selected_optional_food_ids,        
     )
 
 

@@ -29,6 +29,61 @@ def _safe_float(value, field_label, errors):
         errors.append(f"{field_label} must be a valid number.")
         return None
 
+def _render_saved_meal_preview(selected_date, meal_type, saved_meal, quantity):
+    required_items = []
+    optional_foods = []
+
+    for item in saved_meal.items:
+        if item.is_optional:
+            optional_foods.append({"food": item.food})
+            continue
+
+        scaled_amount = (item.amount or 0) * quantity
+
+        required_items.append({
+            "food": item.food,
+            "amount": scaled_amount,
+            "unit": item.unit,
+        })
+
+    foods = Food.query.filter_by(is_active=True).order_by(Food.name.asc()).all()
+    saved_meals = SavedMeal.query.filter_by(is_active=True).order_by(SavedMeal.name.asc()).all()
+
+    entries = (
+        LogEntry.query
+        .filter_by(entry_date=selected_date)
+        .order_by(LogEntry.meal_type.asc(), LogEntry.created_at.asc())
+        .all()
+    )
+
+    grouped_entries = {meal_key: [] for meal_key, _ in MEAL_TYPES}
+    for entry in entries:
+        grouped_entries.setdefault(entry.meal_type, []).append(entry)
+
+    totals = {
+        "calories": round(sum(entry.calories or 0 for entry in entries), 2),
+        "protein_g": round(sum(entry.protein_g or 0 for entry in entries), 2),
+        "carbs_g": round(sum(entry.carbs_g or 0 for entry in entries), 2),
+        "fat_g": round(sum(entry.fat_g or 0 for entry in entries), 2),
+    }
+
+    return render_template(
+        "daily_log/index.html",
+        selected_date=selected_date,
+        foods=foods,
+        saved_meals=saved_meals,
+        meal_types=MEAL_TYPES,
+        food_units=FOOD_UNITS,
+        grouped_entries=grouped_entries,
+        totals=totals,
+
+        preview_mode=True,
+        preview_meal_type=meal_type,
+        preview_saved_meal=saved_meal,
+        preview_quantity=quantity,
+        required_items=required_items,
+        optional_foods=optional_foods,
+    )
 
 
 @daily_log_bp.route("/", methods=["GET", "POST"])
@@ -164,20 +219,95 @@ def log_saved_meal():
     if errors:
         for error in errors:
             flash(error, "error")
-        return redirect(url_for("daily_log_bp.index", entry_date=selected_date.isoformat()))
+        return _render_saved_meal_preview(
+            selected_date,
+            meal_type,
+            saved_meal,
+            quantity
+        )
+
+    selected_optional_food_ids = {
+        int(food_id)
+        for food_id in request.form.getlist("optional_food_ids")
+        if str(food_id).strip().isdigit()
+    }
 
     created_count = 0
 
     for item in saved_meal.items:
         food = item.food
 
+        if item.is_optional:
+            if food.id not in selected_optional_food_ids:
+                continue
+
+            optional_amount = _safe_float(
+                request.form.get(f"optional_amount_{food.id}"),
+                f"Amount for optional food '{food.name}'",
+                errors,
+            )
+            optional_unit = (request.form.get(f"optional_unit_{food.id}") or "").strip()
+
+            if not optional_unit:
+                errors.append(f"Unit for optional food '{food.name}' is required.")
+
+            if errors:
+                for error in errors:
+                    flash(error, "error")
+                return _render_saved_meal_preview(
+                    selected_date,
+                    meal_type,
+                    saved_meal,
+                    quantity
+                )
+
+            try:
+                nutrition = calculate_entry_from_food(food, optional_amount, optional_unit)
+            except ValueError as exc:
+                flash(f"{food.name}: {exc}", "error")
+                return _render_saved_meal_preview(
+                    selected_date,
+                    meal_type,
+                    saved_meal,
+                    quantity
+                )
+
+            entry = LogEntry(
+                entry_date=selected_date,
+                meal_type=meal_type,
+                entry_kind="food",
+                source_food_id=food.id,
+                source_saved_meal_id=saved_meal.id,
+                display_name=food.name,
+                amount=optional_amount,
+                unit=optional_unit,
+                calories=nutrition["calories"],
+                protein_g=nutrition["protein_g"],
+                carbs_g=nutrition["carbs_g"],
+                fat_g=nutrition["fat_g"],
+                fiber_g=nutrition["fiber_g"],
+                sugar_g=nutrition["sugar_g"],
+                sodium_mg=nutrition["sodium_mg"],
+                saturated_fat_g=nutrition["saturated_fat_g"],
+                cholesterol_mg=nutrition["cholesterol_mg"],
+                notes=f"From saved meal: {saved_meal.name} x{quantity} (optional item)",
+            )
+
+            db.session.add(entry)
+            created_count += 1
+            continue
+
         try:
             effective_amount = item.amount * quantity
             nutrition = calculate_entry_from_food(food, effective_amount, item.unit)
-
         except ValueError as exc:
             flash(f"{saved_meal.name}: {exc}", "error")
-            return redirect(url_for("daily_log_bp.index", entry_date=selected_date.isoformat()))
+            return _render_saved_meal_preview(
+                selected_date,
+                meal_type,
+                saved_meal,
+                quantity
+            )
 
         entry = LogEntry(
             entry_date=selected_date,
@@ -206,7 +336,87 @@ def log_saved_meal():
     db.session.commit()
 
     flash(f"Saved meal logged successfully ({created_count} items).", "success")
-    return redirect(url_for("daily_log_bp.index", entry_date=selected_date.isoformat()))
+    return _render_saved_meal_preview(
+        selected_date,
+        meal_type,
+        saved_meal,
+        quantity
+    )
+
+@daily_log_bp.post("/load-saved-meal")
+def load_saved_meal():
+
+    selected_date = _parse_date(request.form.get("entry_date"))
+    meal_type = (request.form.get("meal_type") or "").strip()
+    saved_meal_id = request.form.get("saved_meal_id")
+    quantity_raw = request.form.get("quantity")
+
+    try:
+        quantity = float(quantity_raw)
+        if quantity <= 0:
+            raise ValueError
+    except Exception:
+        quantity = 1.0
+
+    saved_meal = SavedMeal.query.get_or_404(saved_meal_id)
+
+    required_items = []
+    optional_foods = []
+
+    for item in saved_meal.items:
+
+        if item.is_optional:
+            optional_foods.append({
+                "food": item.food
+            })
+            continue
+
+        scaled_amount = (item.amount or 0) * quantity
+
+        required_items.append({
+            "food": item.food,
+            "amount": scaled_amount,
+            "unit": item.unit,
+        })
+
+    foods = Food.query.filter_by(is_active=True).order_by(Food.name.asc()).all()
+    saved_meals = SavedMeal.query.filter_by(is_active=True).order_by(SavedMeal.name.asc()).all()
+
+    entries = (
+        LogEntry.query
+        .filter_by(entry_date=selected_date)
+        .order_by(LogEntry.meal_type.asc(), LogEntry.created_at.asc())
+        .all()
+    )
+
+    grouped_entries = {meal_key: [] for meal_key, _ in MEAL_TYPES}
+    for entry in entries:
+        grouped_entries.setdefault(entry.meal_type, []).append(entry)
+
+    totals = {
+        "calories": round(sum(entry.calories or 0 for entry in entries), 2),
+        "protein_g": round(sum(entry.protein_g or 0 for entry in entries), 2),
+        "carbs_g": round(sum(entry.carbs_g or 0 for entry in entries), 2),
+        "fat_g": round(sum(entry.fat_g or 0 for entry in entries), 2),
+    }
+
+    return render_template(
+        "daily_log/index.html",
+        selected_date=selected_date,
+        foods=foods,
+        saved_meals=saved_meals,
+        meal_types=MEAL_TYPES,
+        food_units=FOOD_UNITS,
+        grouped_entries=grouped_entries,
+        totals=totals,
+
+        preview_mode=True,
+        preview_meal_type=meal_type,
+        preview_saved_meal=saved_meal,
+        preview_quantity=quantity,
+        required_items=required_items,
+        optional_foods=optional_foods,
+    )    
 
 @daily_log_bp.route("/<int:entry_id>/edit", methods=["GET", "POST"])
 def edit_entry(entry_id):

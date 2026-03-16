@@ -8,6 +8,7 @@
 {% set selected_food_ids = selected_food_ids if selected_food_ids is defined else ["", "", ""] %}
 {% set selected_amounts = selected_amounts if selected_amounts is defined else ["", "", ""] %}
 {% set selected_units = selected_units if selected_units is defined else ["", "", ""] %}
+{% set selected_optional_food_ids = selected_optional_food_ids if selected_optional_food_ids is defined else ["", "", ""] %}
 
 <div class="page-header">
     <div>
@@ -39,7 +40,7 @@
         <textarea id="notes" name="notes" rows="3">{{ form_data.get('notes', '') }}</textarea>
     </div>
 
-    <h3 style="margin-top: 8px;">Meal Items</h3>
+    <h3 style="margin-top: 8px;">Required Items</h3>
 
     <div class="table-wrap">
         <table class="data-table">
@@ -99,6 +100,46 @@
         </button>
         <button type="button" class="btn btn-secondary btn-sm" id="remove-saved-meal-row-btn">
             Remove Last Row
+        </button>
+    </div>
+
+    <h3 style="margin-top: 24px;">Optional Foods</h3>
+
+    <div class="table-wrap">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Food</th>
+                </tr>
+            </thead>
+            <tbody id="saved-meal-optional-items-body">
+                {% for i in range(optional_row_count) %}
+                    <tr class="saved-meal-optional-item-row">
+                        <td>
+                            <select name="optional_food_id">
+                                <option value="">-- Select Optional Food --</option>
+                                {% for food in foods %}
+                                    <option
+                                        value="{{ food.id }}"
+                                        {% if selected_optional_food_ids[i] == (food.id|string) %}selected{% endif %}
+                                    >
+                                        {{ food.name }}{% if food.brand %} ({{ food.brand }}){% endif %}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <div style="display: flex; gap: 8px; margin-top: 12px;">
+        <button type="button" class="btn btn-secondary btn-sm" id="add-saved-meal-optional-row-btn">
+            + Add Optional Food
+        </button>
+        <button type="button" class="btn btn-secondary btn-sm" id="remove-saved-meal-optional-row-btn">
+            Remove Last Optional Food
         </button>
     </div>
 

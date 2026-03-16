@@ -4,7 +4,7 @@ from flask import Flask
 from pathlib import Path
 
 from config import Config
-from app.extensions import db
+from app.extensions import db, migrate
 
 
 def create_app():
@@ -20,6 +20,7 @@ def create_app():
     Path(app.instance_path).mkdir(parents=True, exist_ok=True)
 
     db.init_app(app)
+    migrate.init_app(app, db)
 
     from app.main import main_bp
     from app.food_library import food_library_bp
