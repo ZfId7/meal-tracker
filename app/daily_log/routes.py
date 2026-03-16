@@ -2,7 +2,7 @@
 
 from datetime import datetime, date
 
-from flask import flash, redirect, render_template, request, url_for
+from flask import flash, jsonify, redirect, render_template, request, url_for
 
 from app.constants import FOOD_UNITS, MEAL_TYPES
 from app.daily_log import daily_log_bp
@@ -85,6 +85,119 @@ def _render_saved_meal_preview(selected_date, meal_type, saved_meal, quantity):
         optional_foods=optional_foods,
     )
 
+def _parse_date_range():
+    entry_date_raw = (request.args.get("entry_date") or "").strip()
+    start_date_raw = (request.args.get("start_date") or "").strip()
+    end_date_raw = (request.args.get("end_date") or "").strip()
+
+    if entry_date_raw:
+        selected = _parse_date(entry_date_raw)
+        return selected, selected
+
+    start_date = _parse_date(start_date_raw) if start_date_raw else date.today()
+    end_date = _parse_date(end_date_raw) if end_date_raw else start_date
+
+    if end_date < start_date:
+        start_date, end_date = end_date, start_date
+
+    return start_date, end_date
+
+
+def _get_entries_for_range(start_date, end_date):
+    return (
+        LogEntry.query
+        .filter(LogEntry.entry_date >= start_date, LogEntry.entry_date <= end_date)
+        .order_by(
+            LogEntry.entry_date.asc(),
+            LogEntry.meal_type.asc(),
+            LogEntry.created_at.asc(),
+        )
+        .all()
+    )
+
+
+def _build_export_payload(start_date, end_date):
+    entries = _get_entries_for_range(start_date, end_date)
+
+    grouped_days = []
+    overall_totals = {
+        "calories": 0,
+        "protein_g": 0,
+        "carbs_g": 0,
+        "fat_g": 0,
+    }
+
+    current_day = None
+    current_day_bucket = None
+
+    for entry in entries:
+        if current_day != entry.entry_date:
+            if current_day_bucket is not None:
+                grouped_days.append(current_day_bucket)
+
+            current_day = entry.entry_date
+            current_day_bucket = {
+                "date": entry.entry_date.isoformat(),
+                "meals": {meal_key: [] for meal_key, _ in MEAL_TYPES},
+                "totals": {
+                    "calories": 0,
+                    "protein_g": 0,
+                    "carbs_g": 0,
+                    "fat_g": 0,
+                },
+            }
+
+        entry_data = {
+            "id": entry.id,
+            "meal_type": entry.meal_type,
+            "display_name": entry.display_name,
+            "amount": entry.amount,
+            "unit": entry.unit,
+            "calories": entry.calories,
+            "protein_g": entry.protein_g,
+            "carbs_g": entry.carbs_g,
+            "fat_g": entry.fat_g,
+            "fiber_g": entry.fiber_g,
+            "sugar_g": entry.sugar_g,
+            "sodium_mg": entry.sodium_mg,
+            "saturated_fat_g": entry.saturated_fat_g,
+            "cholesterol_mg": entry.cholesterol_mg,
+            "notes": entry.notes,
+            "entry_kind": entry.entry_kind,
+            "source_food_id": entry.source_food_id,
+            "source_saved_meal_id": entry.source_saved_meal_id,
+            "created_at": entry.created_at.isoformat() if entry.created_at else None,
+        }
+
+        current_day_bucket["meals"].setdefault(entry.meal_type, []).append(entry_data)
+
+        current_day_bucket["totals"]["calories"] += entry.calories or 0
+        current_day_bucket["totals"]["protein_g"] += entry.protein_g or 0
+        current_day_bucket["totals"]["carbs_g"] += entry.carbs_g or 0
+        current_day_bucket["totals"]["fat_g"] += entry.fat_g or 0
+
+        overall_totals["calories"] += entry.calories or 0
+        overall_totals["protein_g"] += entry.protein_g or 0
+        overall_totals["carbs_g"] += entry.carbs_g or 0
+        overall_totals["fat_g"] += entry.fat_g or 0
+
+    if current_day_bucket is not None:
+        grouped_days.append(current_day_bucket)
+
+    for day_bucket in grouped_days:
+        for key in day_bucket["totals"]:
+            day_bucket["totals"][key] = round(day_bucket["totals"][key], 2)
+
+    for key in overall_totals:
+        overall_totals[key] = round(overall_totals[key], 2)
+
+    return {
+        "start_date": start_date.isoformat(),
+        "end_date": end_date.isoformat(),
+        "meal_types": [{"value": value, "label": label} for value, label in MEAL_TYPES],
+        "days": grouped_days,
+        "overall_totals": overall_totals,
+    }
 
 @daily_log_bp.route("/", methods=["GET", "POST"])
 def index():
@@ -417,6 +530,27 @@ def load_saved_meal():
         required_items=required_items,
         optional_foods=optional_foods,
     )    
+
+@daily_log_bp.get("/export/json")
+def export_json():
+    start_date, end_date = _parse_date_range()
+    payload = _build_export_payload(start_date, end_date)
+    return jsonify(payload)
+
+
+@daily_log_bp.get("/export/print")
+def export_print():
+    start_date, end_date = _parse_date_range()
+    payload = _build_export_payload(start_date, end_date)
+
+    return render_template(
+        "daily_log/export_print.html",
+        start_date=start_date,
+        end_date=end_date,
+        meal_types=MEAL_TYPES,
+        days=payload["days"],
+        overall_totals=payload["overall_totals"],
+    )
 
 @daily_log_bp.route("/<int:entry_id>/edit", methods=["GET", "POST"])
 def edit_entry(entry_id):

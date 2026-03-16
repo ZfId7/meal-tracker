@@ -28,6 +28,63 @@
             <button type="submit" class="btn btn-secondary">Load Date</button>
         </div>
     </form>
+    
+</div>
+
+<div class="card" style="margin-bottom: 24px;">
+  <h3 style="margin-top: 0;">Export Daily Logs</h3>
+
+  <form method="GET" action="{{ url_for('daily_log_bp.export_json') }}" class="form-grid" style="align-items: end; margin-bottom: 16px;">
+    <div class="form-group">
+      <label for="json_start_date">Start Date</label>
+      <input
+        type="date"
+        id="json_start_date"
+        name="start_date"
+        value="{{ selected_date.isoformat() }}"
+      >
+    </div>
+
+    <div class="form-group">
+      <label for="json_end_date">End Date</label>
+      <input
+        type="date"
+        id="json_end_date"
+        name="end_date"
+        value="{{ selected_date.isoformat() }}"
+      >
+    </div>
+
+    <div class="form-actions" style="justify-content: flex-start; margin-top: 0;">
+      <button type="submit" class="btn btn-secondary">Export JSON</button>
+    </div>
+  </form>
+
+  <form method="GET" action="{{ url_for('daily_log_bp.export_print') }}" class="form-grid" style="align-items: end;">
+    <div class="form-group">
+      <label for="print_start_date">Start Date</label>
+      <input
+        type="date"
+        id="print_start_date"
+        name="start_date"
+        value="{{ selected_date.isoformat() }}"
+      >
+    </div>
+
+    <div class="form-group">
+      <label for="print_end_date">End Date</label>
+      <input
+        type="date"
+        id="print_end_date"
+        name="end_date"
+        value="{{ selected_date.isoformat() }}"
+      >
+    </div>
+
+    <div class="form-actions" style="justify-content: flex-start; margin-top: 0;">
+      <button type="submit" class="btn btn-secondary">Printable Report</button>
+    </div>
+  </form>
 </div>
 
 <div class="card form-card" style="margin-bottom: 24px;">

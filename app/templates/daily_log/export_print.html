@@ -1,0 +1,102 @@
+{% extends "base.html" %}
+
+{% block title %}Daily Log Export | Meal Tracker{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h2>Daily Log Export</h2>
+    <p class="page-subtitle">
+      {{ start_date.isoformat() }}{% if start_date != end_date %} to {{ end_date.isoformat() }}{% endif %}
+    </p>
+  </div>
+
+  <div>
+    <button class="btn btn-primary" onclick="window.print()">Print / Save PDF</button>
+  </div>
+</div>
+
+<div class="card" style="margin-bottom: 24px;">
+  <h3 style="margin-top: 0;">Overall Totals</h3>
+  <div class="form-grid">
+    <div><strong>Calories:</strong> {{ overall_totals.calories }}</div>
+    <div><strong>Protein:</strong> {{ overall_totals.protein_g }} g</div>
+    <div><strong>Carbs:</strong> {{ overall_totals.carbs_g }} g</div>
+    <div><strong>Fat:</strong> {{ overall_totals.fat_g }} g</div>
+  </div>
+</div>
+
+{% for day in days %}
+<div class="card" style="margin-bottom: 24px; page-break-inside: avoid;">
+  <h3 style="margin-top: 0;">{{ day.date }}</h3>
+
+  <div class="form-grid" style="margin-bottom: 16px;">
+    <div><strong>Calories:</strong> {{ day.totals.calories }}</div>
+    <div><strong>Protein:</strong> {{ day.totals.protein_g }} g</div>
+    <div><strong>Carbs:</strong> {{ day.totals.carbs_g }} g</div>
+    <div><strong>Fat:</strong> {{ day.totals.fat_g }} g</div>
+  </div>
+
+  {% for meal_key, meal_label in meal_types %}
+    {% set meal_entries = day.meals.get(meal_key, []) %}
+
+    <div style="margin-bottom: 20px;">
+      <h4 style="margin-bottom: 10px;">{{ meal_label }}</h4>
+
+      {% if meal_entries %}
+      <div class="table-wrap">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Food</th>
+              <th>Amount</th>
+              <th>Calories</th>
+              <th>Protein</th>
+              <th>Carbs</th>
+              <th>Fat</th>
+              <th>Notes</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for entry in meal_entries %}
+            <tr>
+              <td>{{ entry.display_name }}</td>
+              <td>{{ entry.amount }} {{ entry.unit }}</td>
+              <td>{{ entry.calories }}</td>
+              <td>{{ entry.protein_g }} g</td>
+              <td>{{ entry.carbs_g }} g</td>
+              <td>{{ entry.fat_g }} g</td>
+              <td>{{ entry.notes or "-" }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <p style="margin: 0;">No entries for {{ meal_label.lower() }}.</p>
+      {% endif %}
+    </div>
+  {% endfor %}
+</div>
+{% endfor %}
+
+<style>
+  @media print {
+    .site-header,
+    .page-header .btn,
+    nav,
+    footer {
+      display: none !important;
+    }
+
+    .card {
+      box-shadow: none !important;
+      border: 1px solid #ccc !important;
+    }
+
+    body {
+      background: #fff !important;
+    }
+  }
+</style>
+{% endblock %}
