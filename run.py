@@ -1,4 +1,4 @@
-# File path: /app.py
+# File path: /run.py
 
 from app import create_app
 

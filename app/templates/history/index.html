@@ -96,6 +96,16 @@
             <h3 style="margin: 0;">Selected Day</h3>
             <p class="page-subtitle">Viewing details for {{ selected_date.strftime("%A, %B %d, %Y") }}</p>
         </div>
+
+        <div>
+            <a
+                class="btn btn-secondary"
+                href="{{ url_for('daily_log_bp.export_print', entry_date=selected_date.isoformat()) }}"
+                target="_blank"
+            >
+                Export Day
+            </a>
+        </div>
     </div>
 
     <div class="form-grid">
