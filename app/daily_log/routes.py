@@ -449,11 +449,11 @@ def log_saved_meal():
     db.session.commit()
 
     flash(f"Saved meal logged successfully ({created_count} items).", "success")
-    return _render_saved_meal_preview(
-        selected_date,
-        meal_type,
-        saved_meal,
-        quantity
+    return redirect(
+        url_for(
+            "daily_log_bp.index",
+            entry_date=selected_date.isoformat()
+        )
     )
 
 @daily_log_bp.post("/load-saved-meal")

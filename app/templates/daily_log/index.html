@@ -90,7 +90,7 @@
 <div class="card form-card" style="margin-bottom: 24px;">
     <h3 style="margin-top: 0;">Add Food Entry</h3>
 
-    <form method="POST">
+    <form method="POST" action="{{ url_for('daily_log_bp.index') }}">
         <input type="hidden" name="entry_date" value="{{ selected_date.isoformat() }}">
 
         <div class="form-grid">

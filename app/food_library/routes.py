@@ -346,3 +346,13 @@ def edit(food_id):
         food_categories=FOOD_CATEGORIES,
         form_data=form_data,
     )
+
+@food_library_bp.route("/<int:food_id>/delete", methods=["POST"])
+def delete(food_id):
+    food = Food.query.get_or_404(food_id)
+
+    db.session.delete(food)
+    db.session.commit()
+
+    flash("Food deleted successfully.", "success")
+    return redirect(url_for("food_library_bp.index"))

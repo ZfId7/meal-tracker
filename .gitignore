@@ -6,3 +6,4 @@ instance/
 *.db
 .vscode/
 .DS_Store
+.venv/
